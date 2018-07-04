@@ -246,3 +246,43 @@ curl  "viap-elb-1-722781242.eu-west-2.elb.amazonaws.com/v1/artists/b10bbbfc-cf9e
 ```
 curl  "viap-elb-1-722781242.eu-west-2.elb.amazonaws.com/v1/artists/3798b104-01cb-484c-a3b0-56adc6399b80" | json_pp
 ```
+
+## Further Improvements
+
+### Additional sources for artist description
+Discogs was the most straight forward and easy to consume, and also provided a good documentation. But in case of missing data, additional sources can be added.
+
+### Improved concurrent execution
+Fine tuning and testing the most performant combination of introducing new threads and reusing a thread pool. Suggestion here would be the newly introduced Spring 5 Reactive framework.
+
+### Precise parsing
+Due to time limits, a default JSON-to-Object convertor was implemented (Gson) which parses the whole JSON response and converts it to a fully populated response object. Instead of Gson, using JsonParser provides a more precise way of gathering required data but it requires more work to implement correctly. This way the response models can be optimized.
+
+### Caching
+A simple mechanism was used to cache the final response for the main endpoint, but additional caching of the requests towards the third party services can also help improve performance. The data we are handling is long-lived and is rarely updated. 
+
+The Redis implementation was done by using default settings, in real world scenario there will be an ElastiCache instance or a Redis Sentinel setup to fully support this.
+
+The current implementation does not have a fallback functionality that in the case of failure of the caching system, it proceeds with regular requests. This is the reason why the caching is disabled by default, and can be improved to handle requests even when the caching service is unavailable. 
+
+### Circuit Breaking
+Hystirx is a fault tolerance library that is used to control the communication with external services, but can also be used for controlling internal microservices. 
+
+In the current implementation Hystrix only takes care of long running http executions, and in case the request takes longer than expected, it routes the response to a fallback method. There is trivial implementation of these methods and based on the business specification these methods can be implemented fully.
+
+### Integration test
+Additional tests can be added for checking of the contract between the third party services and the parsing mechanism
+
+### Healthcheck service
+The specified third party services do not provide a healthcheck endpoint so a simple request was used to determine their availability. 
+
+### Request Throttling
+The current implementation is instance-based and does not work well behind a load balancer (each request to an instance will be limited to one request per second). If the endpoints are hosted on AWS API Gateway, there is a very straightforward way of throttling the requests, or the throttling can be done on the load balancer layer.
+
+### User-Agent
+Although the third party services did not use any kind of tokens for communication their advice is to add meaningful User-Agents to the requests. These can be specified and added to each request.
+### Documentation
+Swagger as a tool for documentation is very easy to implement and use and can provide both automated documentation of endpoints but can also be used to generate boilerplate code based on the API contract in various programming languages.
+
+Java class level documentation was not fully provided due to time constraints (yes, developers always find an excuse for not writing the docs :)
+ 
