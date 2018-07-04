@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  web:
+    image: gjavolce/viaplay-test-api:latest
+    ports:
+      - 4321:8080
+    expose:
+      - 4321
+    networks:
+      - viaplay
+  redis:
+    image: redis:latest
+    ports:
+      - 6379
+    networks:
+      - viaplay
+networks:
+    viaplay:
+      external: true
